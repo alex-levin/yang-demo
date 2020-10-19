@@ -2,7 +2,7 @@ https://www.youtube.com/watch?v=kESU4Y8DJ2A
 
 If our computer is trying to connect to a network device and request data off of it, they have to agree
 what the structure of that data is going to be so that our computer knows what to do with the data in the
-first place. Our computer needs to know how the data is been organized in order for it to make decisions
+first place. Our computer needs to know how the data is being organized in order for it to make decisions
 or actions on that data.
 https://tools.ietf.org/id/draft-ietf-netmod-yang-tree-diagrams-03.xml
 Our computer and network device needs to agree on what the structure of the data needs to look like when
