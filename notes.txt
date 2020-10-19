@@ -1,0 +1,155 @@
+https://www.youtube.com/watch?v=kESU4Y8DJ2A
+
+If our computer is trying to connect to a network device and request data off of it, they have to agree
+what the structure of that data is going to be so that our computer knows what to do with the data in the
+first place. Our computer needs to know how the data is been organized in order for it to make decisions
+or actions on that data.
+https://tools.ietf.org/id/draft-ietf-netmod-yang-tree-diagrams-03.xml
+Our computer and network device needs to agree on what the structure of the data needs to look like when
+it gets sent back and forth.
+We are talking about industry standards network automation protocols NETCONF and RESTCONF.
+If we go to the Cisco devnet exam, we are going to see NETCONF and RESTCONF particularly in the iOS XE section.
+iOS XE devices are programmable because they implement NETCONF and RESTCONF wherear a lot of other network devices have
+their own APIs like Nexus. That doesn't mean that Nexus devices don't yang data models.
+It's just that NETCONF and RESTCONF rely almost exclusively on structuring their daya based on a yang template.
+Yang is covered in the Cisco definite course on CBT Nuggets.
+We will see how we can get the yang template off of a network device and then parse it into a tree structure like the
+one we have in https://tools.ietf.org/id/draft-ietf-netmod-yang-tree-diagrams-03.xml.
+
+python yangdemo.py
+
+Will have a yang model written into the ietf-ip.yang file.
+ieft-ip yang model imports three other models: ietf-interfaces, ietf-inet-types, ietf-yang-types
+
+module ietf-ip {
+ namespace "urn:ietf:params:xml:ns:yang:ietf-ip";
+ prefix ip;
+ import ietf-interfaces {
+   prefix if;
+ }
+ import ietf-inet-types {
+   prefix inet;
+ }
+ import ietf-yang-types {
+   prefix yang;
+ }
+
+Let's modify the script using each of these to retrieve these models too.
+    # ip_schema = m.get_schema('ietf-ip')
+    # ip_schema = m.get_schema('ietf-interfaces')
+    # ip_schema = m.get_schema('ietf-inet-types')
+    ip_schema = m.get_schema('ietf-yang-types')
+    ...
+    # f = open('ietf-ip.yang', 'w')
+    # f = open('ietf-interfaces.yang', 'w')
+    # f = open('ietf-inet-types.yang', 'w')
+    f = open('ietf-yang-types.yang', 'w')    
+
+If we want to explore yang models in a tree-like structure like in
+https://tools.ietf.org/id/draft-ietf-netmod-yang-tree-diagrams-03.xml,
+we are going to install the Python library pyang.
+python -m venv venv
+pip install pyang
+
+The ietf-ip.yang model is also available in 
+https://raw.githubusercontent.com/mbj4668/pyang/master/modules/ietf/ietf-ip.yang
+
+(venv) alex@Alexs-Mac-mini yang % pyang -f tree ietf-ip.yang
+
+module: ietf-ip
+  augment /if:interfaces/if:interface:
+    +--rw ipv4!
+    |  +--rw enabled?      boolean
+    |  +--rw forwarding?   boolean
+    |  +--rw mtu?          uint16
+    |  +--rw address* [ip]
+    |  |  +--rw ip                     inet:ipv4-address-no-zone
+    |  |  +--rw (subnet)
+    |  |  |  +--:(prefix-length)
+    |  |  |  |  +--rw prefix-length?   uint8
+    |  |  |  +--:(netmask)
+    |  |  |     +--rw netmask?         yang:dotted-quad {ipv4-non-contiguous-netmasks}?
+    |  |  +--ro origin?                ip-address-origin
+    |  +--rw neighbor* [ip]
+    |     +--rw ip                    inet:ipv4-address-no-zone
+    |     +--rw link-layer-address    yang:phys-address
+    |     +--ro origin?               neighbor-origin
+    +--rw ipv6!
+       +--rw enabled?                     boolean
+       +--rw forwarding?                  boolean
+       +--rw mtu?                         uint32
+       +--rw address* [ip]
+       |  +--rw ip               inet:ipv6-address-no-zone
+       |  +--rw prefix-length    uint8
+       |  +--ro origin?          ip-address-origin
+       |  +--ro status?          enumeration
+       +--rw neighbor* [ip]
+       |  +--rw ip                    inet:ipv6-address-no-zone
+       |  +--rw link-layer-address    yang:phys-address
+       |  +--ro origin?               neighbor-origin
+       |  +--ro is-router?            empty
+       |  +--ro state?                enumeration
+       +--rw dup-addr-detect-transmits?   uint32
+       +--rw autoconf
+          +--rw create-global-addresses?        boolean
+          +--rw create-temporary-addresses?     boolean {ipv6-privacy-autoconf}?
+          +--rw temporary-valid-lifetime?       uint32 {ipv6-privacy-autoconf}?
+          +--rw temporary-preferred-lifetime?   uint32 {ipv6-privacy-autoconf}?
+  augment /if:interfaces-state/if:interface:
+    x--ro ipv4!
+    |  x--ro forwarding?   boolean
+    |  x--ro mtu?          uint16
+    |  x--ro address* [ip]
+    |  |  x--ro ip                     inet:ipv4-address-no-zone
+    |  |  x--ro (subnet)?
+    |  |  |  +--:(prefix-length)
+    |  |  |  |  x--ro prefix-length?   uint8
+    |  |  |  +--:(netmask)
+    |  |  |     x--ro netmask?         yang:dotted-quad {ipv4-non-contiguous-netmasks}?
+    |  |  x--ro origin?                ip-address-origin
+    |  x--ro neighbor* [ip]
+    |     x--ro ip                    inet:ipv4-address-no-zone
+    |     x--ro link-layer-address?   yang:phys-address
+    |     x--ro origin?               neighbor-origin
+    x--ro ipv6!
+       x--ro forwarding?   boolean
+       x--ro mtu?          uint32
+       x--ro address* [ip]
+       |  x--ro ip               inet:ipv6-address-no-zone
+       |  x--ro prefix-length    uint8
+       |  x--ro origin?          ip-address-origin
+       |  x--ro status?          enumeration
+       x--ro neighbor* [ip]
+          x--ro ip                    inet:ipv6-address-no-zone
+          x--ro link-layer-address?   yang:phys-address
+          x--ro origin?               neighbor-origin
+          x--ro is-router?            empty
+          x--ro state?                enumeration
+(venv) alex@Alexs-Mac-mini yang % 
+
+We can now send a request to the device saying, Hey, Mr. Switch, use the ietf-ip model,
+and we will know exactly the structure of the data that comes back to us.
+We can now create a script to correcly parse out the data to retrieve, let's say, the IP address:
+module: ietf-ip
+  augment /if:interfaces/if:interface:
+    +--rw ipv4!
+    |  +--rw enabled?      boolean
+    |  +--rw forwarding?   boolean
+    |  +--rw mtu?          uint16
+    |  +--rw address* [ip]
+    |  |  +--rw ip                     inet:ipv4-address-no-zone
+    |  |  +--rw (subnet)
+    |  |  |  +--:(prefix-length)
+    |  |  |  |  +--rw prefix-length?   uint8
+    |  |  |  +--:(netmask)
+    |  |  |     +--rw netmask?         yang:dotted-quad {ipv4-non-contiguous-netmasks}?
+    |  |  +--ro origin?     
+
+Whether to use NETCONF or RESTCONF doesn't really matter (NETCONF is going to be using XML, RESTCONF - XML or JSON).
+We know where to go to retrieve data that we need.   
+
+How much Python do we need to know? Read 1 chapter a day Automate The Boring Stuff With Python.
+We need first 5 chapters. In 5 days, we will be ready for DevNet.
+        
+
+
